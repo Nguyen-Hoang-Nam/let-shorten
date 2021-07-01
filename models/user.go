@@ -9,9 +9,19 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
+type Hashes []string
+
+// func (cs *Hashes) MarshalDynamoDBAttributeValue(av *dynamodb.AttributeValue) error {
+// 	av.SS = make([]*string, 0, len(cs))
+// 	for _, v := range cs {
+// 		av.SS = append(av.SS, &v)
+// 	}
+// 	return nil
+// }
+
 type User struct {
-	ID     string `json:"Id,omitempty"`
-	UrlSet []Url  `dynamodbav:"UrlSet"`
+	ID     string   `json:"Id,omitempty"`
+	Hashes []string `json:"Hashes" dynamodbav:"Hashes"`
 }
 
 func (u User) GetByID(id string) (*User, error) {
@@ -44,22 +54,6 @@ func (u User) GetByID(id string) (*User, error) {
 func (u User) AddURLByID(url Url, id string) error {
 	db := db.GetDB()
 
-	newUrl := []*dynamodb.AttributeValue{
-		{
-			M: map[string]*dynamodb.AttributeValue{
-				"URL": {
-					S: aws.String(url.URL),
-				},
-				"Hash": {
-					S: aws.String(url.Hash),
-				},
-				"TTL": {
-					N: aws.String(url.TTL),
-				},
-			},
-		},
-	}
-
 	params := &dynamodb.UpdateItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"Id": {
@@ -69,11 +63,15 @@ func (u User) AddURLByID(url Url, id string) error {
 		TableName:        aws.String("User"),
 		UpdateExpression: aws.String("SET #hs = list_append(#hs, :vals)"),
 		ExpressionAttributeNames: map[string]*string{
-			"#hs": aws.String("UrlSet"),
+			"#hs": aws.String("Hashes"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":vals": {
-				L: newUrl,
+				L: []*dynamodb.AttributeValue{
+					{
+						S: aws.String(url.Hash),
+					},
+				},
 			},
 		},
 	}
@@ -111,7 +109,7 @@ func (u User) AddURLByID(url Url, id string) error {
 func (u User) RemoveURLByID(id, position string) error {
 	db := db.GetDB()
 
-	query := fmt.Sprintf("REMOVE hashSet[%s]", position)
+	query := fmt.Sprintf("REMOVE Hashes[%s]", position)
 	params := &dynamodb.UpdateItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"Id": {

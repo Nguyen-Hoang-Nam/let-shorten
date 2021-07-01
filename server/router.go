@@ -54,7 +54,7 @@ func NewRouter() *gin.Engine {
 		})
 	})
 
-	router.DELETE("/url/:urlid", controllers.DeleteUrl)
+	router.DELETE("/url/:id", controllers.DeleteUrl)
 
 	return router
 }

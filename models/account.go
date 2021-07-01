@@ -44,7 +44,7 @@ func (a Account) CreateAccount(account Account) error {
 			"Id": {
 				S: aws.String(account.ID),
 			},
-			"UrlSet": {
+			"Hashes": {
 				L: []*dynamodb.AttributeValue{},
 			},
 		},
